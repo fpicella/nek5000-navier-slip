@@ -28,6 +28,8 @@ If you use this code, please cite:
 
 GitHub's **"Cite this repository"** button (from [`CITATION.cff`](CITATION.cff)) gives the BibTeX entry.
 
+Validation figures and results online: <https://fpicella.github.io/nek5000-navier-slip/>
+
 ## Contents
 
 | Folder | Content |
@@ -83,6 +85,9 @@ fields are not in the repository; the summary tables and figures are.
 ## License
 
 BSD 3-Clause, see [`LICENSE`](LICENSE). Nek5000 itself is distributed under its own license.
+
+The case files, scripts and documentation were prepared with the help of an AI assistant
+(Claude, Anthropic).
 
 ## References
 

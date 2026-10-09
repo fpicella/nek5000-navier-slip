@@ -2,9 +2,9 @@
 """rerun_analysis.py -- analysis of the re-run of 2026-10-08 (new file; reads, never writes outside this folder).
 
 Inputs  (this folder):  runs/couette_kn*/{run.log|run.log.gz, cyl_drag.dat},  runs/re20_kn*/{cyl_drag.dat, wall_*.dat, run.log*}
-        (read only)  ../../results/legendre_fig2a_all.dat   digitised Legendre, Lauga & Magnaudet (2009) fig. 2a (Re = 20 rows)
-                     ../../results/re20_sweep.dat           the earlier (2026-09-11) Re = 20 sweep
-                     ../../results/legendre_campaign.txt    the earlier runs at Re = 20 Kn = 0.322, 0.391, 0.529 and wall analysis
+        (read only)  ../data/legendre_fig2a_all.dat   digitised Legendre, Lauga & Magnaudet (2009) fig. 2a (Re = 20 rows)
+                     ../data/re20_sweep.dat           the earlier (2026-09-11) Re = 20 sweep
+                     ../data/legendre_campaign.txt    the earlier runs at Re = 20 Kn = 0.322, 0.391, 0.529 and wall analysis
 Outputs (this folder):  rerun_results.json, rerun_results.txt, legendre_campaign_rerun.txt (campaign file with the Re = 20 rows replaced)
 
 Definitions (identical to the original Re = 20 comparison):
@@ -20,11 +20,12 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-NEK = os.path.abspath(os.path.join(HERE, '..', '..'))
+DATA = os.path.join(HERE, '..', 'data')
+OLDRUNS = os.path.join(HERE, '..', 'runs')          # the original campaign runs (not in the repository)
 RUNS = os.path.join(HERE, 'runs')
-LEG = os.path.join(NEK, 'results', 'legendre_fig2a_all.dat')
-OLDSW = os.path.join(NEK, 'results', 're20_sweep.dat')
-OLDCAMP = os.path.join(NEK, 'results', 'legendre_campaign.txt')
+LEG = os.path.join(DATA, 'legendre_fig2a_all.dat')
+OLDSW = os.path.join(DATA, 're20_sweep.dat')
+OLDCAMP = os.path.join(DATA, 'legendre_campaign.txt')
 NOMINAL = np.array([0.01, 0.02, 0.05, 0.07, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 1, 2, 2.4, 5, 10, 20])
 OUT = []
 
@@ -113,7 +114,7 @@ def load_run(kn):
 
 def wallsep(d):
     """slope of the wall vorticity at the rear stagnation point (fit over |th| < 5 deg) and separation angle (zero crossing
-    on the upper surface) -- same method as results/plot_legendre.py"""
+    on the upper surface) -- same method as scripts/plot_legendre.py"""
     fs = [f for f in glob.glob(os.path.join(d, 'wall_*.dat')) if os.path.getsize(f) > 0]
     if not fs:
         return np.nan, np.nan
@@ -145,7 +146,7 @@ old = np.loadtxt(OLDSW)                      # Kn t Cd Cd_p Cd_v us_max us_min r
 oldcd = {round(r[0], 6): r for r in old}
 # earlier runs at full precision: runs_data/re20_kn*/cyl_drag.dat (sweep) and runs_data/L20_kn*/cyl_drag.dat (campaign)
 OLDHIST = {}
-for pth in glob.glob(os.path.join(NEK, 'runs_data', 're20_kn*')) + glob.glob(os.path.join(NEK, 'runs_data', 'L20_kn*')):
+for pth in glob.glob(os.path.join(OLDRUNS, 're20_kn*')) + glob.glob(os.path.join(OLDRUNS, 'L20_kn*')):
     kk = float(re.sub(r'^.*_kn', '', os.path.basename(pth)))
     f_ = os.path.join(pth, 'cyl_drag.dat')
     if os.path.exists(f_) and 'L20' not in pth or (os.path.exists(f_) and round(kk, 6) not in OLDHIST):
@@ -307,7 +308,7 @@ if have:
         new.append(line)
     open(os.path.join(HERE, 'legendre_campaign_rerun.txt'), 'w').write('\n'.join(new))
     P('')
-    P('  legendre_campaign_rerun.txt: copy of results/legendre_campaign.txt with the Re = 20 rows of the runs %s replaced by the re-run Cd and wall slope'
+    P('  legendre_campaign_rerun.txt: copy of data/legendre_campaign.txt with the Re = 20 rows of the runs %s replaced by the re-run Cd and wall slope'
       % sorted(done))
     P('  (unused columns CL_max/St/growth/cw copied or set to the same placeholders; Re >= 50 rows are the earlier ones, unchanged).')
     res['replaced_rows'] = sorted(done)

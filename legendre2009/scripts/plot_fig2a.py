@@ -3,12 +3,14 @@
 and compare the normalised drag Cd*(Kn) = (Cd(Kn)-Cd(inf))/(Cd(0)-Cd(inf))
 with Legendre, Lauga & Magnaudet (2009) figure 2a (Re=20 circles, digitised
 from the arXiv PDF: legendre_fig2a_re20.dat).
-Usage: plot_fig2a.py RUNS_DIR  -> results/re20_sweep.dat, results/fig2a_re20.png
+Usage: plot_fig2a.py [RUNS_DIR, default ../runs]  -> ../data/re20_sweep.dat, ../figures/fig2a_re20.png
 """
 import sys, glob, os, numpy as np
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 
-runs = sys.argv[1] if len(sys.argv) > 1 else '../runs'
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # legendre2009/
+DATA, FIGS = os.path.join(HERE, 'data'), os.path.join(HERE, 'figures')
+runs = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'runs')
 
 def load(prefix):
     out = []
@@ -28,7 +30,7 @@ def load(prefix):
 rows = load('re20')
 fine = load('fine')
 hdr = 'Kn(<0=shear-free) t_end Cd Cd_p Cd_v us_max us_min res_navier dudt_max Cd_drift_last10'
-np.savetxt('re20_sweep.dat', rows, header=hdr, fmt='%12.5e')
+np.savetxt(os.path.join(DATA, 're20_sweep.dat'), rows, header=hdr, fmt='%12.5e')
 print(hdr); print(rows)
 
 cd0 = rows[rows[:, 0] == 0.0, 2]; cdi = rows[rows[:, 0] < 0.0, 2]
@@ -38,7 +40,7 @@ if len(cd0) and len(cdi):
     print('Cd(Kn=inf) = %.4f   (Legendre 1.33)' % cdi)
     sl = rows[rows[:, 0] > 0.0]
     cds = (sl[:, 2] - cdi)/(cd0 - cdi)
-    ref = np.loadtxt('legendre_fig2a_re20.dat')
+    ref = np.loadtxt(os.path.join(DATA, 'legendre_fig2a_re20.dat'))
     fig, ax = plt.subplots(1, 2, figsize=(11, 4.2))
     ax[0].semilogx(ref[:, 0], ref[:, 1], 'o', mfc='none', ms=8, color='k', label='Legendre et al. 2009, fig. 2a (Re=20)')
     ax[0].semilogx(sl[:, 0], cds, 's', ms=5, color='C3', label='Nek5000, implicit Robin (this work)')
@@ -65,8 +67,8 @@ if len(cd0) and len(cdi):
             c = rows[rows[:, 0] == r[0], 2]
             if len(c):
                 print('%7.3f  %10.6f  %10.6f  %+9.2e' % (r[0], c[0], r[2], (c[0] - r[2])/r[2]))
-        np.savetxt('re20_sweep_fine.dat', fine, header=hdr, fmt='%12.5e')
-    fig.tight_layout(); fig.savefig('fig2a_re20.png', dpi=150)
+        np.savetxt(os.path.join(DATA, 're20_sweep_fine.dat'), fine, header=hdr, fmt='%12.5e')
+    fig.tight_layout(); fig.savefig(os.path.join(FIGS, 'fig2a_re20.png'), dpi=150)
     # interpolate reference at our Kn for a numeric comparison
     refi = np.interp(np.log(sl[:, 0]), np.log(ref[:, 0]), ref[:, 1])
     print('\n   Kn      Cd      Cd*_nek   Cd*_Legendre   diff')

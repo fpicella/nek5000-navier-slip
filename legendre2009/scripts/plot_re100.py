@@ -5,7 +5,9 @@ units), compared with Legendre et al. (2009) fig 2a, 2b and 3 (Re = 100
 diamonds, Knc = 0.38).  Writes re100_sweep.dat and re100_vs_legendre.png."""
 import glob, os, sys, numpy as np
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
-runs = sys.argv[1] if len(sys.argv) > 1 else '../runs_data'
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # legendre2009/
+DATA, FIGS = os.path.join(HERE, 'data'), os.path.join(HERE, 'figures')
+runs = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'runs')
 KNC = 0.38
 
 def stats(f, twin=100.0):
@@ -65,7 +67,7 @@ for k1, k2 in zip(gk[:-1], gk[1:]):
     if G[k1] > 0 >= G[k2]:
         knc = k1 + (k2 - k1)*G[k1]/(G[k1] - G[k2])
 print('   threshold (zero growth, linear interpolation): Knc = %.3f   (Legendre et al.: 0.38)' % knc)
-np.savetxt('re100_sweep.dat', np.array([[k] + list(R[k]) for k in kns]),
+np.savetxt(os.path.join(DATA, 're100_sweep.dat'), np.array([[k] + list(R[k]) for k in kns]),
            header='Kn Cd_mean CL_max St CL_amp amp_growth_ratio t_end', fmt='%12.6f')
 cd0, cl0, st0 = R[0.0][0], R[0.0][1], R[0.0][2]
 cdi = R[-1.0][0] if -1.0 in R else np.nan
@@ -73,17 +75,17 @@ print('\nno-slip: Cd %.3f  CL %.3f  St %.4f | Legendre 1.350, 0.334, 0.176 | lit
 print('shear-free: Cd %.4f | Legendre 0.415' % cdi)
 ks = [k for k in kns if k > 0]
 fig, ax = plt.subplots(1, 3, figsize=(14, 4.2))
-L = np.loadtxt('legendre_re100_fig2a.dat')
+L = np.loadtxt(os.path.join(DATA, 'legendre_re100_fig2a.dat'))
 ax[0].semilogx(L[:, 0], L[:, 1], 'D', mfc='none', ms=7, color='k', label='Legendre et al. 2009 fig 2a')
 ax[0].semilogx(ks, [(R[k][0] - cdi)/(cd0 - cdi) for k in ks], 's', color='C3', label='Nek5000')
 ax[0].set(xlabel='Kn', ylabel='$C_D^*$', title='(a) Re = 100: normalised mean drag', xlim=(0.008, 30), ylim=(0, 1))
-L = np.loadtxt('legendre_re100_fig2b.dat')
+L = np.loadtxt(os.path.join(DATA, 'legendre_re100_fig2b.dat'))
 ax[1].plot(L[:, 0], L[:, 1], 'D', mfc='none', ms=7, color='k', label='Legendre fig 2b')
 ax[1].plot([k/KNC for k in ks], [R[k][1]/cl0 for k in ks], 's', mfc='none', color='C3', label='Nek5000, Kn$_c$ = 0.38 (Legendre)')
 if np.isfinite(knc):
     ax[1].plot([k/knc for k in ks], [R[k][1]/cl0 for k in ks], 's', color='C3', label='Nek5000, own Kn$_c$ = %.3f' % knc)
 ax[1].set(xlabel='Kn / Kn$_c$', ylabel='$C_L^* = C_L/C_L(0)$', title='(b) lift amplitude', xlim=(-0.02, 1.4), ylim=(-0.02, 1.05))
-L = np.loadtxt('legendre_re100_fig3.dat')
+L = np.loadtxt(os.path.join(DATA, 'legendre_re100_fig3.dat'))
 ax[2].plot(L[:, 0], L[:, 1], 'D', mfc='none', ms=7, color='k', label='Legendre fig 3')
 kk = [k for k in ks if R[k][2] > 0]
 ax[2].plot([k/KNC for k in kk], [R[k][2]/st0 for k in kk], 's', mfc='none', color='C3', label='Nek5000, Kn$_c$ = 0.38')
@@ -91,4 +93,4 @@ if np.isfinite(knc):
     ax[2].plot([k/knc for k in kk], [R[k][2]/st0 for k in kk], 's', color='C3', label='Nek5000, own Kn$_c$')
 ax[2].set(xlabel='Kn / Kn$_c$', ylabel='$St^* = St/St(0)$', title='(c) Strouhal number', xlim=(-0.02, 1.05))
 for a in ax: a.grid(alpha=.3); a.legend(fontsize=8)
-fig.tight_layout(); fig.savefig('re100_vs_legendre.png', dpi=140)
+fig.tight_layout(); fig.savefig(os.path.join(FIGS, 're100_vs_legendre.png'), dpi=140)

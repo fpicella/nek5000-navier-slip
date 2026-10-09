@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """plot_verif.py [RUNS_DIR] -- tabulate and plot the verification suite
-(verif/runs/*/verif_summary.dat, see make_runs.py for the run families).
-Writes verif/verif_results.txt and verif/verif_convergence.png."""
+(RUNS_DIR/*/verif_summary.dat, default data/ = the results shipped with the
+repository; pass runs/ after running make_runs.py; see make_runs.py for the
+run families).  Writes verif_results.txt and verif_convergence.png."""
 import glob, os, sys, numpy as np
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 HERE = os.path.dirname(os.path.abspath(__file__))
-runs = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'runs')
+runs = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'data')
 S = {}
 for f in glob.glob(os.path.join(runs, '*', 'verif_summary.dat')):
     S[os.path.basename(os.path.dirname(f))] = np.atleast_2d(np.loadtxt(f))[0]

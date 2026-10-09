@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""plot_couette.py [RUNS_DIR] -- the circular-Couette validation in one figure.
+"""plot_couette.py [RUNS_DIR] -- the circular-Couette validation in one figure
+(RUNS_DIR/c3_*/profile.dat and p3_*/verif_summary.dat, default data/).
 Inner cylinder r = a = 0.5 at rest with the Navier slip condition, outer
 cylinder r = R = 1.5 rotating at omega = 1 (no slip).  Exact solution
 u_th = A r + B/r with u_th = lambda (du_th/dr - u_th/r) at r = a.
@@ -10,7 +11,7 @@ u_th = A r + B/r with u_th = lambda (du_th/dr - u_th/r) at r = a.
 import glob, os, sys, numpy as np
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 HERE = os.path.dirname(os.path.abspath(__file__))
-runs = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'runs_data')
+runs = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'data')
 a, R, om = 0.5, 1.5, 1.0
 
 def coef(kn, flat=False):

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""make_runs.py -- set up the verification runs in verif/runs/<name> and
-write verif/jobs.txt (one shell command per run).  Run on the compute
-host, then:   xargs -P 16 -I{} bash -c '{}' < verif/jobs.txt
+"""make_runs.py [NAME_PREFIX ...] -- set up the verification runs in
+verification/runs/<name> and write verification/jobs.txt (one shell command
+per run).  Needs NEK5000=/path/to/Nek5000 (gencon, genmap) and the executables
+from build_verif.sh (build_N<N>, build_N<N>_3d).  Then:
+    xargs -P 16 -I{} bash -c '{}' < verification/jobs.txt
 Families (see verif.usr for the three exact solutions):
   p1_kn<Kn>_N<N>     case 1 (Stokes, translating outer cylinder), p-ref.
   p3_kn1_N<N>        case 3 (circular Couette, steady NS), p-refinement
@@ -18,7 +20,8 @@ Annulus a = 0.5, R = 1.5; coarse mesh 8 x 2 elements for p-refinement.
 import os, sys, shutil, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-NEK  = os.path.join(ROOT, 'Nek5000')
+NEK  = os.environ.get('NEK5000') or sys.exit('set NEK5000=/path/to/Nek5000')
+MESH = os.path.join(ROOT, 'cylinder2d', 'gen_cyl_re2.py')
 A, R = 0.5, 1.5
 only = sys.argv[1:]            # optional: only set up runs whose name starts with these
 
@@ -55,7 +58,7 @@ def make(name, N, parstr, ntheta=8, nr=2, nproc=1, nz=0, lz=1.0):
         if os.path.exists(os.path.join(d, f)):
             os.remove(os.path.join(d, f))
     with open(os.path.join(d, 'mesh.log'), 'w') as log:
-        subprocess.run([sys.executable, os.path.join(ROOT, 'mesh', 'gen_cyl_re2.py'),
+        subprocess.run([sys.executable, MESH,
                         '-o', 'verif', '--rinf', str(R), '--ntheta', str(ntheta),
                         '--nr', str(nr), '--dr1', repr((R - A)/nr)]
                        + (['--nz', str(nz), '--lz', repr(lz)] if nz else []),

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Legendre, Lauga & Magnaudet (2009) figures 1, 3 and 4 against this work:
-DNS (legendre_campaign.txt, wall dumps wall_dns/) and nekStab linear stability
-(../nekstab/results: lsa_summary.txt, wall_lsa/ = wall distributions of the
+"""plot_legendre_lsa.py NEKSTAB_RESULTS_DIR -- Legendre, Lauga & Magnaudet (2009) figures 1, 3 and 4 against this work:
+DNS (../data/legendre_campaign.txt, wall dumps ../runs/*/diag/) and nekStab linear stability
+(NEKSTAB_RESULTS_DIR, not in this repository: lsa_summary.txt, wall_lsa/ = wall distributions of the
 Newton base flows, incl. the unstable steady branch of the bf_* continuation).
 Digitised: legendre_fig1_{separation,shedding}.dat, legendre_fig3_all.dat,
 legendre_fig4_curves.dat (digitize_fig3.py, digitize_fig4.py).
@@ -10,7 +10,13 @@ legendre_fig134_summary.txt"""
 import os, re, glob, numpy as np
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 
-D = os.path.dirname(os.path.abspath(__file__)); NS = os.path.join(os.path.dirname(D), 'nekstab', 'results')
+import sys
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # legendre2009/
+D, FIGS = os.path.join(HERE, 'data'), os.path.join(HERE, 'figures')
+NS = sys.argv[1] if len(sys.argv) > 1 else os.environ.get('NEKSTAB_RESULTS', '')
+if not os.path.exists(os.path.join(NS, 'lsa_summary.txt')):
+    sys.exit('usage: plot_legendre_lsa.py NEKSTAB_RESULTS_DIR  (needs lsa_summary.txt and wall_lsa/ from the\n'
+             'nekStab linear stability runs, which are not part of this repository)')
 txt = open(os.path.join(D, 'legendre_campaign.txt')).read()
 dns = {}
 for line in txt.splitlines():
@@ -33,7 +39,7 @@ def wmax(files):
     W = np.vstack([np.loadtxt(f, ndmin=2) for f in files if os.path.getsize(f) > 0])
     return 0.5*np.abs(W[:, 2]).max()
 wd, wb = {}, {}
-for d in glob.glob(os.path.join(D, 'wall_dns', '*')):
+for d in glob.glob(os.path.join(HERE, 'runs', '*')):
     m = re.match(r'(?:L|re)([\d.]+)_kn(-?[\d.]+)$', os.path.basename(d))
     if m and not dns.get((float(m.group(1)), float(m.group(2))), {}).get('uns', False):
         wd[(float(m.group(1)), float(m.group(2)))] = wmax(glob.glob(d + '/diag/wall_*.dat'))
@@ -74,7 +80,7 @@ kr = sorted(knc); ax.plot([0] + [knc[r][0] for r in kr], [rec] + kr, 'D-', color
 ax.set_yscale('log'); ax.set_xlim(-0.05, 2.7); ax.set_ylim(4, 1000); ax.set_xlabel('Kn = $\\lambda/a$'); ax.set_ylabel('Re')
 ax.text(1.75, 28, 'unseparated', fontsize=8); ax.text(0.9, 30, 'steady\nseparated', fontsize=8); ax.text(0.03, 400, 'vortex\nshedding', fontsize=8)
 ax.grid(alpha=.3, which='both'); ax.legend(fontsize=7.5, loc='lower right'); ax.set_title('Figure 1: stability diagram', fontsize=10)
-fig.tight_layout(); fig.savefig(os.path.join(D, 'legendre_fig1_lsa.png'), dpi=150)
+fig.tight_layout(); fig.savefig(os.path.join(FIGS, 'legendre_fig1_lsa.png'), dpi=150)
 
 # ---------------- figure 3: St* = St(Kn)/St(0)
 l3 = np.loadtxt(os.path.join(D, 'legendre_fig3_all.dat'))
@@ -102,7 +108,7 @@ axs[0].set_xlabel('Kn / Kn$_c$ (each work with its own Kn$_c$)'); axs[1].set_xla
 for ax in axs: ax.set_ylabel('St* = St(Kn)/St(0)'); ax.grid(alpha=.3)
 axs[0].legend(fontsize=6.5, ncol=2); axs[0].set_title('Figure 3, as in the paper', fontsize=10)
 axs[1].set_title('same data against Kn', fontsize=10)
-fig.tight_layout(); fig.savefig(os.path.join(D, 'legendre_fig3.png'), dpi=150)
+fig.tight_layout(); fig.savefig(os.path.join(FIGS, 'legendre_fig3.png'), dpi=150)
 
 # ---------------- figure 4: surface vorticity
 l4 = {}
@@ -147,7 +153,7 @@ ax.plot([], [], 'o', color='0.3', mfc='none', mew=1.6, ms=8, label='this work: s
 ax.set_xscale('log'); ax.set_yscale('log'); ax.set_xlim(2, 1000); ax.set_ylim(1, 40)
 ax.set_xlabel('Re'); ax.set_ylabel('$\\omega_{max}/(U/a)$'); ax.grid(alpha=.3, which='both')
 ax.legend(fontsize=6.5, ncol=2, loc='upper left'); ax.set_title('Figure 4: maximum surface vorticity', fontsize=10)
-fig.tight_layout(); fig.savefig(os.path.join(D, 'legendre_fig4.png'), dpi=150)
+fig.tight_layout(); fig.savefig(os.path.join(FIGS, 'legendre_fig4.png'), dpi=150)
 S.append('\ncritical surface vorticity omega_max a/U (this work):')
 S.append('  separation (DNS, at Kn_sep): ' + '  '.join('Re %g: %.2f' % tuple(p) for p in ws))
 S.append('  shedding (linear stability, at Knc): ' + '  '.join('Re %g: %.2f' % tuple(p) for p in wc))

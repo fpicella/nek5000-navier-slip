@@ -7,7 +7,7 @@ Re = 2..1000; decades at x = 251.3 and 328.0), w = 10**((293.4 - y)/107.7)
 Kn = 0, 78 dash-dotted Kn = inf, 77 + 79 thin lines Kn = 0.05, 0.1, 0.2, 0.4, 1,
 2.2, 5 (ordered by value), 74 long dashes: separation, 75 short dashes: shedding.
 Output: legendre_fig4_curves.dat (curve Re w)"""
-import sys, numpy as np
+import os, sys, numpy as np
 import pymupdf as fitz
 
 pdf = sys.argv[1] if len(sys.argv) > 1 else 'Legendre_JFM_2009.pdf'
@@ -32,7 +32,7 @@ thin = polylines(77) + polylines(79)
 assert len(thin) == 7, len(thin)
 thin.sort(key=lambda c: -np.interp(np.log(100.0), np.log(c[:, 0]), c[:, 1]))   # by value at Re = 100
 for kn, c in zip(('0.05', '0.1', '0.2', '0.4', '1', '2.2', '5'), thin): curves['Kn' + kn] = c
-with open('legendre_fig4_curves.dat', 'w') as f:
+with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'legendre_fig4_curves.dat'), 'w') as f:
     f.write('# curve Re omega_max*a/U   Legendre et al. 2009 fig 4 (vector data of the arXiv PDF, page 8)\n')
     for name, c in curves.items():
         for re, w in c: f.write('%-6s %9.3f %8.4f\n' % (name, re, w))
