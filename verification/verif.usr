@@ -1,6 +1,6 @@
 c-----------------------------------------------------------------------
 c  verif.usr : verification of navier_slip.f against exact solutions
-c  in the annulus a = 0.5 < r < R (mesh from mesh/gen_cyl_re2.py, all
+c  in the annulus a = 0.5 < r < R (mesh from cylinder2d/gen_cyl_re2.py, all
 c  outer faces Dirichlet).  Slip on the inner cylinder (boundary ID 1).
 c
 c  userParam01 = Kn = lambda/a  (>0 slip, 0 no-slip, <0 shear-free)

@@ -13,3 +13,12 @@ build.log
 run.log
 __pycache__/
 *.pyc
+
+# run directories and job lists made by the verification and campaign scripts
+verification/runs/
+verification/jobs.txt
+legendre2009/runs/
+legendre2009/rerun_2026-10-08/runs/
+legendre2009/jobs_*.txt
+legendre2009/queue/
+legendre2009/logs/

@@ -9,7 +9,9 @@ Separation: sign of the slope cw of the wall vorticity at the rear stagnation
 point (steady runs).  Shedding: sign of the growth rate of the lift envelope."""
 import glob, os, re, sys, numpy as np
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
-runs = sys.argv[1] if len(sys.argv) > 1 else '../runs_data'
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # legendre2009/
+DATA, FIGS = os.path.join(HERE, 'data'), os.path.join(HERE, 'figures')
+runs = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'runs')
 OUT = []
 def P(s=''):
     print(s); OUT.append(s)
@@ -142,7 +144,7 @@ if H:
           % (Re, kn, v['t'], v['cl'], v['sat'] if np.isfinite(v['sat']) else 0.0, v['growth']))
 
 # ---------------------------------------------------------------- figure 1
-Ls = np.loadtxt('legendre_fig1_separation.dat'); Lh = np.loadtxt('legendre_fig1_shedding.dat')
+Ls = np.loadtxt(os.path.join(DATA, 'legendre_fig1_separation.dat')); Lh = np.loadtxt(os.path.join(DATA, 'legendre_fig1_shedding.dat'))
 fig, ax = plt.subplots(figsize=(7.5, 5.5))
 ax.semilogy(Ls[:, 0], Ls[:, 1], 'k-o', ms=3.5, lw=1, label='Legendre et al. 2009, separation')
 ax.semilogy(Lh[:, 0], Lh[:, 1], 'k--o', ms=3.5, lw=1, label='Legendre et al. 2009, vortex shedding')
@@ -151,10 +153,10 @@ if shed: s = np.array(sorted(shed, key=lambda p: p[1])); ax.semilogy(s[:, 0], s[
 for k1, k2, Re in shed_err: ax.plot([k1, k2], [Re, Re], '-', color='C3', lw=1.2)
 ax.text(0.05, 700, 'vortex\nshedding', fontsize=9); ax.text(1.0, 250, 'steady separated wake', fontsize=9); ax.text(0.75, 7.0, 'unseparated wake', fontsize=9)
 ax.set(xlabel='Kn = $\\lambda/a$', ylabel='Re', xlim=(0, 2.6), ylim=(5, 2000), title='Stability diagram (Legendre et al. 2009, fig. 1)')
-ax.grid(alpha=.3, which='both'); ax.legend(fontsize=8, loc='lower right'); fig.tight_layout(); fig.savefig('legendre_fig1.png', dpi=150)
+ax.grid(alpha=.3, which='both'); ax.legend(fontsize=8, loc='lower right'); fig.tight_layout(); fig.savefig(os.path.join(FIGS, 'legendre_fig1.png'), dpi=150)
 
 # ---------------------------------------------------------------- figure 2
-L2a = np.loadtxt('legendre_fig2a_all.dat'); L2b = np.loadtxt('legendre_fig2b_all.dat')
+L2a = np.loadtxt(os.path.join(DATA, 'legendre_fig2a_all.dat')); L2b = np.loadtxt(os.path.join(DATA, 'legendre_fig2b_all.dat'))
 LKNC = {50: 0.07, 100: 0.38, 200: 0.47, 500: 0.49, 800: 0.53}           # values used in their fig 2b
 fig, ax = plt.subplots(2, 6, figsize=(24, 7.5))
 P('\nnormalisation values (Kn = 0 and Kn = inf):')
@@ -187,7 +189,7 @@ for j, Re in enumerate((20.0, 50.0, 100.0, 200.0, 500.0, 800.0)):
     b.set(xlabel='Kn / Kn$_c$', xlim=(-0.02, 1.6), ylim=(-0.02, 1.05)); b.grid(alpha=.3); b.legend(fontsize=7)
     if j == 1: b.set_ylabel('$C_L^* = C_L/C_L(0)$')
 fig.suptitle('Legendre et al. (2009) fig. 2: normalised drag (top) and lift amplitude (bottom)', fontsize=13)
-fig.tight_layout(); fig.savefig('legendre_fig2.png', dpi=120)
+fig.tight_layout(); fig.savefig(os.path.join(FIGS, 'legendre_fig2.png'), dpi=120)
 
 # ---------------------------------------------------------------- figure 1 insets
 sel = [('L200_kn0', 'Re = 200, Kn = 0'), ('L200_kn0.1', 'Re = 200, Kn = 0.1'), ('L200_kn0.2', 'Re = 200, Kn = 0.2'),
@@ -203,5 +205,5 @@ for i, (d, title) in enumerate(sel):
     ax[i].add_patch(plt.Circle((0, 0), 0.5, color='0.4'))
     ax[i].set(aspect='equal', xlim=(-1, 10.5), ylim=(-2.5, 2.5), title=title); ax[i].set_xticks([]); ax[i].set_yticks([])
 fig.suptitle('Vorticity (red positive, colour range $\\pm 5 U/D$) at the end of the runs, as in the insets of Legendre et al. fig. 1', fontsize=11)
-fig.tight_layout(); fig.savefig('legendre_fig1_insets.png', dpi=120)
-open('legendre_campaign.txt', 'w').write('\n'.join(OUT) + '\n')
+fig.tight_layout(); fig.savefig(os.path.join(FIGS, 'legendre_fig1_insets.png'), dpi=120)
+open(os.path.join(DATA, 'legendre_campaign.txt'), 'w').write('\n'.join(OUT) + '\n')
