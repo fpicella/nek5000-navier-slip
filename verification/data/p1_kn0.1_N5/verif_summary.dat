@@ -1,0 +1,2 @@
+# case N nel Kn dt nsteps err_inf err_L2 err_wall relQ res_navier sigma sigma_exact
+  1   5      16  1.000000E-01  1.000000E-03    20000  9.2597615437E-04  4.0963351557E-04  9.2597615437E-04  5.4326828719E-04  2.3586442386E-03  0.0000000000E+00  0.0000000000E+00

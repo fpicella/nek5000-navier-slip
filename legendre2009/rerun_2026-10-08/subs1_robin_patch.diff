@@ -1,0 +1,43 @@
+diff --git a/core/subs1.f b/core/subs1.f
+index 715fe87..9da70bc 100644
+--- a/core/subs1.f
++++ b/core/subs1.f
+@@ -1310,6 +1310,9 @@ c     if (matmod.lt.0) icase=3 ! Block-diagonal Axhelm
+ 
+       endif
+ 
++      if (ifield.eq.1 .and. matmod.ge.0)               ! Navier slip
++     $   call axhm_robin (au1,au2,au3,u1,u2,u3,nel)  ! (Robin term)
++
+       taxhm=taxhm+(dnekclock()-etime1)
+ 
+       return
+@@ -2662,3 +2665,28 @@ C
+       return
+       end
+ c-----------------------------------------------------------------------
++
++c-----------------------------------------------------------------------
++      subroutine axhm_robin (au1,au2,au3,u1,u2,u3,nel)
++c
++c     Implicit Robin (Navier-slip) boundary term for the stress-form
++c     velocity Helmholtz operator:   au_i <- au_i + rbc * u_i .
++c     rbc (common /robinbc/) = (mu/lambda)*area on the 'shl' wall nodes,
++c     zero elsewhere (set in usrdat3);  ifrobin (common /robinbl/)
++c     switches the term on.  See patch/apply_robin_patch.py.
++c
++      include 'SIZE'
++      common /robinbc/ rbc(lx1,ly1,lz1,lelv)
++      common /robinbl/ ifrobin
++      logical ifrobin
++      real au1(1),au2(1),au3(1),u1(1),u2(1),u3(1)
++
++      if (.not.ifrobin) return
++      n = lx1*ly1*lz1*nel
++      call addcol3 (au1,rbc,u1,n)
++      call addcol3 (au2,rbc,u2,n)
++      if (ldim.eq.3) call addcol3 (au3,rbc,u3,n)
++
++      return
++      end
++c-----------------------------------------------------------------------

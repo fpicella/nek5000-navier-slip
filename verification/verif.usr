@@ -1,0 +1,513 @@
+c-----------------------------------------------------------------------
+c  verif.usr : verification of navier_slip.f against exact solutions
+c  in the annulus a = 0.5 < r < R (mesh from mesh/gen_cyl_re2.py, all
+c  outer faces Dirichlet).  Slip on the inner cylinder (boundary ID 1).
+c
+c  userParam01 = Kn = lambda/a  (>0 slip, 0 no-slip, <0 shear-free)
+c  userParam03 = diagnostics interval (steps)
+c  userParam04 = case
+c    1 : Stokes flow (equation = stokes), outer cylinder translating at
+c        U = 1 along x, steady:  psi = f(r) sin(th),
+c        f = A r^3 + B r ln r + C r + D/r;  force on the cylinder
+c        F_x = 4 pi mu B.  The slip velocity varies along the wall.
+c    2 : decaying azimuthal mode, exact Navier-Stokes solution, outer
+c        wall at rest:  u_th = U0 exp(-nu k^2 t) F(r)/max|F|,
+c        F = Y1(kR) J1(kr) - J1(kR) Y1(kr), k = first root of the
+c        Robin condition F'(a) - (1/a + 1/lambda) F(a) = 0.
+c    3 : circular Couette flow, outer wall rotating at omega = 1,
+c        steady Navier-Stokes:  u_th = A r + B/r, torque -4 pi mu B.
+c    4 : (3D only) axial Couette flow, outer wall translating along z at
+c        W = userParam05, steady Navier-Stokes:
+c        w = W (ln(r/a) + lambda/a)/(ln(R/a) + lambda/a)  (shear-free: w = W),
+c        axial force on the cylinder F_z = 2 pi mu W Lz/(ln(R/a) + lambda/a).
+c        Tests the Robin term on the spanwise velocity (au3).
+c  3D: mesh extruded in z, periodic (gen_cyl_re2.py --nz --lz); forces and
+c  torques of cases 1, 3, 4 are per span Lz.
+c  userParam05 = U0 (case 2), W (case 4)
+c  userParam06, userParam07 = t1, t2: decay rate from E(t1)/E(t2),
+c                E = int |u|^2 dA  (case 2)
+c  Output: verif.dat (history) and verif_summary.dat (final values):
+c    err_inf  = max |u - u_exact| over all GLL points
+c    err_L2   = L2 norm of (u - u_exact) / sqrt(area)
+c    err_wall = max |u - u_exact| over the wall nodes
+c    relQ     = relative error of F_x (1), energy (2), torque (3)
+c    res      = max |u_t - 2 lambda (S.n_f)_t| on the wall
+c-----------------------------------------------------------------------
+      subroutine uservp(ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      udiff  = 0.0
+      utrans = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userf(ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      ffx = 0.0
+      ffy = 0.0
+      ffz = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userq(ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      qvol = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userbc(ix,iy,iz,iside,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      common /zvexi/ izvcas,izvslp
+      common /zvex/ zvc(4),zvk,zval,zvga,zvfm,zva,zvr,zvmu,zvlam
+     $            , zvbet,zvu0
+
+      ux = 0.0
+      uy = 0.0
+      if (izvcas.eq.1) ux = 1.0          ! outer cylinder translating
+      if (izvcas.eq.3) then              ! outer cylinder rotating
+         ux = -y
+         uy =  x
+      endif
+      uz   = 0.0
+      if (izvcas.eq.4) uz = zvu0         ! outer cylinder translating along z
+      temp = 0.0
+      trn  = 0.0
+      tr1  = 0.0
+      tr2  = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine useric(ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      common /zvexi/ izvcas,izvslp
+
+      ux = 0.0
+      uy = 0.0
+      uz   = 0.0
+      if (izvcas.eq.2) call vf_exact(x,y,0.0,ux,uy,uz)
+      temp = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat
+      include 'SIZE'
+      include 'TOTAL'
+      common /zvexi/ izvcas,izvslp
+
+      izvcas = int(uparam(4))
+      if (izvcas.lt.1 .or. izvcas.gt.4) izvcas = 1
+      call nslip_init
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat2
+      include 'SIZE'
+      include 'TOTAL'
+      integer e,f,nw
+      real vf_slip
+
+      call nslip_faces('W  ',1,vf_slip(),nw)
+      do e=1,nelv
+      do f=1,2*ldim
+         if (cbc(f,e,1).eq.'O  ') cbc(f,e,1) = 'v  '
+      enddo
+      enddo
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat3
+      include 'SIZE'
+      include 'TOTAL'
+      real vf_slip
+
+      call nslip_coef(1,vf_slip())
+      call vf_setup
+      return
+      end
+c-----------------------------------------------------------------------
+      real function vf_slip()
+c     slip length lambda = Kn*a (a = 0.5); 0 no-slip; -1 shear-free
+      include 'SIZE'
+      include 'TOTAL'
+      vf_slip = 0.0
+      if (uparam(1).gt.0.0) vf_slip =  0.5*uparam(1)
+      if (uparam(1).lt.0.0) vf_slip = -1.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine vf_setup
+c     Coefficients of the exact solution of the current case.
+      include 'SIZE'
+      include 'TOTAL'
+      common /zvex/ zvc(4),zvk,zval,zvga,zvfm,zva,zvr,zvmu,zvlam
+     $            , zvbet,zvu0
+      common /zvexi/ izvcas,izvslp
+      real zm(4,4),zb(4),zfp(4),zfpp(4)
+      real vf_slip,vf_det
+      real zrr,zk0,zk1,zd0,zd1,zkm,zf,zrad
+      integer i,j,n
+
+      n   = lx1*ly1*lz1*nelv
+      zva = 0.5
+      zrr = 0.0
+      do i=1,n
+         zrr = max(zrr,xm1(i,1,1,1)**2+ym1(i,1,1,1)**2)
+      enddo
+      zvr  = sqrt(glmax(zrr,1))
+      zvmu = cpfld(1,1)
+      if (zvmu.lt.0.0) zvmu = -1.0/zvmu
+      zvlam  = vf_slip()
+      zvbet  = 0.0
+      izvslp = 0
+      if (uparam(1).gt.0.0) then
+         izvslp = 1
+         zvbet  = 1.0/zvlam
+      elseif (uparam(1).lt.0.0) then
+         izvslp = -1
+      endif
+      zvu0 = uparam(5)
+      if (zvu0.eq.0.0) zvu0 = 1.0
+      call rzero(zvc,4)
+
+      if (izvcas.eq.1) then
+c        f(R) = R, f'(R) = 1, f(a) = 0 and the wall condition at r = a
+         zm(1,1) = zvr**3
+         zm(1,2) = zvr*log(zvr)
+         zm(1,3) = zvr
+         zm(1,4) = 1.0/zvr
+         zb(1)   = zvr
+         zm(2,1) = 3.0*zvr**2
+         zm(2,2) = log(zvr) + 1.0
+         zm(2,3) = 1.0
+         zm(2,4) = -1.0/zvr**2
+         zb(2)   = 1.0
+         zm(3,1) = zva**3
+         zm(3,2) = zva*log(zva)
+         zm(3,3) = zva
+         zm(3,4) = 1.0/zva
+         zb(3)   = 0.0
+         zfp(1)  = 3.0*zva**2
+         zfp(2)  = log(zva) + 1.0
+         zfp(3)  = 1.0
+         zfp(4)  = -1.0/zva**2
+         zfpp(1) = 6.0*zva
+         zfpp(2) = 1.0/zva
+         zfpp(3) = 0.0
+         zfpp(4) = 2.0/zva**3
+         do j=1,4
+            if (izvslp.eq.0) then
+               zm(4,j) = zfp(j)                      ! f'(a) = 0
+            else
+               zm(4,j) = zfpp(j) - (1.0/zva+zvbet)*zfp(j)
+            endif
+         enddo
+         zb(4) = 0.0
+         call vf_gauss4(zm,zb,zvc)
+      elseif (izvcas.eq.2) then
+c        first sign change of the Robin determinant, then bisection
+         zk0 = 0.1
+         zd0 = vf_det(zk0)
+         do i=1,20000
+            zk1 = zk0 + 0.01
+            zd1 = vf_det(zk1)
+            if (zd0*zd1.le.0.0) goto 10
+            zk0 = zk1
+            zd0 = zd1
+         enddo
+         call exitti('vf_setup: no root for k$',1)
+   10    continue
+         do i=1,200
+            zkm = 0.5*(zk0+zk1)
+            if (vf_det(zk0)*vf_det(zkm).le.0.0) then
+               zk1 = zkm
+            else
+               zk0 = zkm
+            endif
+         enddo
+         zvk  = 0.5*(zk0+zk1)
+         zval =  bessel_y1(zvk*zvr)
+         zvga = -bessel_j1(zvk*zvr)
+         zvfm = 0.0
+         do i=0,4000
+            zrad = zva + (zvr-zva)*i/4000.0
+            zf   = zval*bessel_j1(zvk*zrad) + zvga*bessel_y1(zvk*zrad)
+            zvfm = max(zvfm,abs(zf))
+         enddo
+      elseif (izvcas.eq.3) then
+c        circular Couette, omega = 1
+         if (izvslp.eq.1) then
+            zvc(2) = -zva/(1.0/zva - zva/zvr**2 + 2.0*zvlam/zva**2)
+         elseif (izvslp.eq.0) then
+            zvc(2) = -zva/(1.0/zva - zva/zvr**2)
+         endif
+         zvc(1) = 1.0 - zvc(2)/zvr**2
+      else
+c        axial Couette (3D): w = zvc(1) (ln(r/a) + zvc(2)), zvc(2) = lambda/a
+         if (izvslp.ge.0) then
+            if (izvslp.eq.1) zvc(2) = zvlam/zva
+            zvc(1) = zvu0/(log(zvr/zva) + zvc(2))
+         endif
+      endif
+
+      if (nio.eq.0) then
+         write(6,'(a,i2,a,1p3e14.6)') ' verif: case',izvcas,
+     $      '   R, mu, Kn =',zvr,zvmu,uparam(1)
+         if (izvcas.eq.2) write(6,'(a,1p2e22.14)')
+     $      ' verif: k, sigma = nu k^2 =',zvk,zvmu*zvk*zvk
+         if (izvcas.ne.2) write(6,'(a,1p4e22.14)')
+     $      ' verif: coefficients',zvc
+      endif
+      return
+      end
+c-----------------------------------------------------------------------
+      real function vf_det(zk)
+c     Determinant of the case-2 eigenproblem: F(R) = 0 and the wall
+c     condition at r = a, for F = alpha J1(kr) + gamma Y1(kr).
+      common /zvex/ zvc(4),zvk,zval,zvga,zvfm,zva,zvr,zvmu,zvlam
+     $            , zvbet,zvu0
+      common /zvexi/ izvcas,izvslp
+      real zk,zx,zj1,zy1,zdj,zdy,zrj,zry
+
+      zx  = zk*zva
+      zj1 = bessel_j1(zx)
+      zy1 = bessel_y1(zx)
+      if (izvslp.eq.0) then
+         zrj = zj1
+         zry = zy1
+      else
+         zdj = zk*(bessel_j0(zx) - zj1/zx)
+         zdy = zk*(bessel_y0(zx) - zy1/zx)
+         zrj = zdj - (1.0/zva + zvbet)*zj1
+         zry = zdy - (1.0/zva + zvbet)*zy1
+      endif
+      vf_det = bessel_j1(zk*zvr)*zry - bessel_y1(zk*zvr)*zrj
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine vf_exact(zx,zy,zt,zux,zuy,zuz)
+c     Exact velocity of the current case at (x,y) and time t.
+      common /zvex/ zvc(4),zvk,zval,zvga,zvfm,zva,zvr,zvmu,zvlam
+     $            , zvbet,zvu0
+      common /zvexi/ izvcas,izvslp
+      real zx,zy,zt,zux,zuy,zuz,zr,zc,zs,zf,zfp,zut
+
+      zr = sqrt(zx*zx+zy*zy)
+      zc = zx/zr
+      zs = zy/zr
+      zuz = 0.0
+      if (izvcas.eq.1) then
+         zf  = zvc(1)*zr**3 + zvc(2)*zr*log(zr) + zvc(3)*zr
+     $       + zvc(4)/zr
+         zfp = 3.0*zvc(1)*zr**2 + zvc(2)*(log(zr)+1.0) + zvc(3)
+     $       - zvc(4)/zr**2
+         zux = zf*zc*zc/zr + zfp*zs*zs
+         zuy = zs*zc*(zf/zr - zfp)
+      elseif (izvcas.eq.2) then
+         zut = zvu0*exp(-zvmu*zvk*zvk*zt)
+     $       * (zval*bessel_j1(zvk*zr) + zvga*bessel_y1(zvk*zr))/zvfm
+         zux = -zut*zs
+         zuy =  zut*zc
+      elseif (izvcas.eq.3) then
+         zut = zvc(1)*zr + zvc(2)/zr
+         zux = -zut*zs
+         zuy =  zut*zc
+      else
+         zux = 0.0
+         zuy = 0.0
+         zuz = zvu0                               ! shear-free: plug flow
+         if (izvslp.ge.0) zuz = zvc(1)*(log(zr/zva) + zvc(2))
+      endif
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine vf_gauss4(zam,zb,zx)
+c     4x4 linear solve, Gaussian elimination with partial pivoting
+      real zam(4,4),zb(4),zx(4),zw(4,5),zt
+      integer i,j,k,ip
+
+      do i=1,4
+         do j=1,4
+            zw(i,j) = zam(i,j)
+         enddo
+         zw(i,5) = zb(i)
+      enddo
+      do k=1,4
+         ip = k
+         do i=k+1,4
+            if (abs(zw(i,k)).gt.abs(zw(ip,k))) ip = i
+         enddo
+         if (ip.ne.k) then
+            do j=1,5
+               zt       = zw(k,j)
+               zw(k,j)  = zw(ip,j)
+               zw(ip,j) = zt
+            enddo
+         endif
+         do i=k+1,4
+            zt = zw(i,k)/zw(k,k)
+            do j=k,5
+               zw(i,j) = zw(i,j) - zt*zw(k,j)
+            enddo
+         enddo
+      enddo
+      do i=4,1,-1
+         zt = zw(i,5)
+         do j=i+1,4
+            zt = zt - zw(i,j)*zx(j)
+         enddo
+         zx(i) = zt/zw(i,i)
+      enddo
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userchk
+      include 'SIZE'
+      include 'TOTAL'
+      common /zvex/ zvc(4),zvk,zval,zvga,zvfm,zva,zvr,zvmu,zvlam
+     $            , zvbet,zvu0
+      common /zvexi/ izvcas,izvslp
+      common /zvdec/ zen1,zen2
+      common /nslipw/ nslut(lx1*ly1*lz1*lelv),nslwm(lx1*ly1*lz1*lelv)
+      real nslut,nslwm
+      real x0(3)
+      save x0
+      data x0 /3*0.0/
+      integer bids(1),iobj(1)
+      save iobj
+      integer i,n,nprint
+      real vf_slip
+      real zen,zenx,zux,zuy,zuz,zd,zinf,ze2,zwal,zvol,zq,zqx,zrq,zlz
+      real zut,zres,zt1,zt2,zsig,zsgx,zpi
+
+      n      = lx1*ly1*lz1*nelv
+      nprint = int(uparam(3))
+      if (nprint.le.0) nprint = 100000000
+      zt1 = uparam(6)
+      zt2 = uparam(7)
+      zpi = 4.0*atan(1.0)
+
+      if (istep.eq.0) then
+         bids(1) = 1
+         call create_obj(iobj(1),bids,1)
+         zen1 = 0.0
+         zen2 = 0.0
+         if (nid.eq.0) then
+            open(unit=72,file='verif.dat')
+            write(72,'(a)') '# istep time err_inf err_L2 err_wall'//
+     $                      ' Q Q_exact res_navier'
+         endif
+         return
+      endif
+
+      if (izvcas.eq.2) then              ! energy at t1 and t2
+         zen = 0.0
+         do i=1,n
+            zen = zen + bm1(i,1,1,1)*(vx(i,1,1,1)**2+vy(i,1,1,1)**2)
+         enddo
+         zen = glsum(zen,1)
+         if (abs(time-zt1).lt.0.5*dt) zen1 = zen
+         if (abs(time-zt2).lt.0.5*dt) zen2 = zen
+      endif
+
+      if (mod(istep,nprint).ne.0 .and. lastep.eq.0) return
+
+c     errors against the exact solution at the current time
+      call nslip_diag(1,vf_slip(),zut,zres)
+      zinf = 0.0
+      ze2  = 0.0
+      zwal = 0.0
+      zvol = 0.0
+      zenx = 0.0
+      zen  = 0.0
+      do i=1,n
+         call vf_exact(xm1(i,1,1,1),ym1(i,1,1,1),time,zux,zuy,zuz)
+         zd   = sqrt((vx(i,1,1,1)-zux)**2 + (vy(i,1,1,1)-zuy)**2
+     $             + (vz(i,1,1,1)-zuz)**2)
+         zinf = max(zinf,zd)
+         if (nslwm(i).gt.0.5) zwal = max(zwal,zd)
+         ze2  = ze2  + bm1(i,1,1,1)*zd*zd
+         zvol = zvol + bm1(i,1,1,1)
+         zenx = zenx + bm1(i,1,1,1)*(zux**2+zuy**2+zuz**2)
+         zen  = zen  + bm1(i,1,1,1)*(vx(i,1,1,1)**2+vy(i,1,1,1)**2
+     $                                +vz(i,1,1,1)**2)
+      enddo
+      zinf = glmax(zinf,1)
+      zwal = glmax(zwal,1)
+      ze2  = sqrt(glsum(ze2,1)/glsum(zvol,1))
+      zenx = glsum(zenx,1)
+      zen  = glsum(zen,1)
+      zlz  = 1.0                                  ! span (forces per Lz in 3D)
+      if (if3d) zlz = glmax(zm1,n) - glmin(zm1,n)
+
+      if (izvcas.eq.1) then
+         call torque_calc(1.0,x0,.false.,.false.)
+         zq  = dragx(1)
+         zqx = 4.0*zpi*zvmu*zvc(2)*zlz
+      elseif (izvcas.eq.2) then
+         zq  = zen
+         zqx = zenx
+      elseif (izvcas.eq.3) then
+         call torque_calc(1.0,x0,.false.,.false.)
+         zq  = torqz(1)
+         zqx = -4.0*zpi*zvmu*zvc(2)*zlz
+      else
+         call torque_calc(1.0,x0,.false.,.false.)
+         zq  = dragz(1)
+         zqx = 2.0*zpi*zvmu*zvc(1)*zlz
+      endif
+      zrq = abs(zq)
+      if (zqx.ne.0.0) zrq = abs(zq-zqx)/abs(zqx)
+
+      if (nid.eq.0) then
+         write(72,'(i9,1p7e16.8)') istep,time,zinf,ze2,zwal,zq,zqx,
+     $                             zres
+         flush(72)
+      endif
+
+      if (lastep.eq.1) then
+c        velocity at every GLL point, for profile plots (serial runs only)
+         if (nid.eq.0 .and. nelv.eq.nelgv) then
+            open(unit=74,file='profile.dat')
+            write(74,'(a)') '# x y ux uy ux_exact uy_exact uz uz_exact'
+            do i=1,n
+               call vf_exact(xm1(i,1,1,1),ym1(i,1,1,1),time,zux,zuy,zuz)
+               write(74,'(1p8e20.12)') xm1(i,1,1,1),ym1(i,1,1,1),
+     $            vx(i,1,1,1),vy(i,1,1,1),zux,zuy,vz(i,1,1,1),zuz
+            enddo
+            close(74)
+         endif
+         zsig = 0.0
+         zsgx = 0.0
+         if (izvcas.eq.2 .and. zen1.gt.0.0 .and. zen2.gt.0.0) then
+            zsig = log(zen1/zen2)/(2.0*(zt2-zt1))
+            zsgx = zvmu*zvk*zvk
+         endif
+         if (nid.eq.0) then
+            open(unit=73,file='verif_summary.dat')
+            write(73,'(a)') '# case N nel Kn dt nsteps err_inf'//
+     $         ' err_L2 err_wall relQ res_navier sigma sigma_exact'
+            write(73,'(i3,i4,i8,1p2e14.6,i9,1p7e18.10)') izvcas,
+     $         lx1-1,nelgv,uparam(1),dt,istep,zinf,ze2,zwal,zrq,
+     $         zres,zsig,zsgx
+            close(73)
+            write(6,'(a,i2,a,i3,a,1pe10.2,a,1p5e11.3)') ' VERIF case',
+     $         izvcas,' N',lx1-1,' Kn',uparam(1),
+     $         '  inf,L2,wall,relQ,res:',zinf,ze2,zwal,zrq,zres
+            if (izvcas.eq.2 .and. zsgx.gt.0.0) write(6,'(a,1p3e22.14)')
+     $         ' VERIF sigma, exact, rel. error:',zsig,zsgx,
+     $         abs(zsig-zsgx)/zsgx
+         endif
+      endif
+      return
+      end
+c-----------------------------------------------------------------------
+      include 'navier_slip.f'

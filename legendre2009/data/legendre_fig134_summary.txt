@@ -1,0 +1,30 @@
+Legendre, Lauga & Magnaudet (2009) figures 1, 3, 4 vs this work (DNS + nekStab linear stability)
+
+figure 3: St* at the last shedding point (DNS) and at onset (linear stability), vs Legendre
+   Re   St(0)_DNS  Kn_last  St*_DNS  Kn/Knc   St*_c(LSA)  | Legendre St* at Kn/Knc~1
+    50    0.1226    0.050    1.011   0.956       1.013   |  1.012
+   100    0.1649    0.330    1.128   0.998       1.128   |  1.130
+   200    0.1959    0.400    1.312   0.953       1.310   |  1.337
+   500    0.2241    0.350    1.662   0.930       1.658   |  2.798
+   800    0.2333    0.300    1.891   0.883       1.919   |  3.833
+
+figure 4: omega_max a/U, this work / Legendre on their iso-Kn curves (steady states only)
+  Kn = 0     DNS  Re 5.5 7 20 45: ratio 0.993 0.996 0.998 0.972
+  Kn = 0     BF   Re 45 47 50 100 200: ratio 0.972 0.969 0.964 0.853 0.741
+  Kn = 0     DNS shedding, instantaneous (snapshots) Re 100 200: ratio 0.999 0.989
+  Kn = 0.05  DNS  Re 20: ratio 0.999
+  Kn = 0.05  BF   Re 50 100 200: ratio 0.984 0.878 0.786
+  Kn = 0.1   DNS  Re 20: ratio 0.996
+  Kn = 0.1   BF   Re 50 60 100 200: ratio 0.999 0.977 0.906 0.843
+  Kn = 0.1   DNS shedding, instantaneous (snapshots) Re 100 200: ratio 1.000 0.991
+  Kn = 0.2   DNS  Re 20 50: ratio 0.997 1.002
+  Kn = 0.2   BF   Re 60 80 100 200 500: ratio 0.992 0.970 0.950 0.922 0.945
+  Kn = 0.4   BF   Re 100 150 200 300 500: ratio 1.000 0.997 0.988 1.000 0.996
+  Kn = 1     DNS  Re 20 50 100 200 500: ratio 0.999 1.001 1.001 1.001 1.001
+  Kn = 5     DNS  Re 20 50 100 200 500: ratio 0.998 1.001 1.004 1.000 1.002
+  Kn = inf   DNS  Re 20 50 200 500: ratio 1.001 1.000 1.001 1.002
+
+critical surface vorticity omega_max a/U (this work):
+  separation (DNS, at Kn_sep): Re 6.28: 2.15  Re 10: 2.39  Re 15: 2.59  Re 20: 2.72  Re 30: 2.90  Re 40: 3.03  Re 65: 3.26  Re 100: 3.48  Re 150: 3.68  Re 200: 3.83  Re 300: 4.03  Re 500: 4.28  Re 800: 4.51
+  shedding (linear stability, at Knc): Re 46.6: 6.26  Re 50: 5.63  Re 60: 5.13  Re 80: 5.00  Re 100: 5.07  Re 150: 5.38  Re 200: 5.69  Re 300: 6.23  Re 500: 7.07  Re 800: 7.92
+  Legendre: separation 2.21..4.40, shedding 4.79..6.61 (their "5 < omega_max a/U < 7")

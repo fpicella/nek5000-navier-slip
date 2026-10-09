@@ -1,0 +1,198 @@
+c-----------------------------------------------------------------------
+c  cyl.usr : 2D flow past a circular cylinder (D = 1, U = 1, Re = 1/nu)
+c            with a Navier slip condition on the cylinder wall.
+c  The slip condition lives in navier_slip.f, included at the end of
+c  this file; the method is explained in README.md.
+c
+c  userParam01 = Kn = lambda/a with a = 0.5 (> 0 slip, 0 no slip,
+c                < 0 shear free)
+c  userParam02 = stop when max|du/dt| < userParam02 (0: run to endTime)
+c  userParam03 = interval (steps) of the diagnostics
+c  userParam06 = amplitude of a transverse-velocity blob behind the
+c                cylinder in the initial condition, which triggers the
+c                shedding at Re > 47 (0: none)
+c
+c  Output cyl_drag.dat (rank 0), one line every userParam03 steps:
+c    istep time Cd Cd_p Cd_v Cl us_max us_min res_navier dudt_max
+c  Cd = Fx/(0.5 rho U^2 D) = 2 Fx, Cd_p and Cd_v its pressure and
+c  viscous parts, Cl = 2 Fy; us = tangential wall velocity oriented
+c  from the front to the rear (us_min < 0: separated flow);
+c  res_navier = max over the wall of |u_t - 2 lambda (S.n)_t| (the
+c  Navier condition itself; ~1e-7 when it is imposed correctly);
+c  dudt_max = max |du/dt| (steady-state monitor).
+c-----------------------------------------------------------------------
+      subroutine uservp(ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      udiff  = 0.0
+      utrans = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userf(ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      ffx = 0.0
+      ffy = 0.0
+      ffz = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userq(ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      qvol = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userbc(ix,iy,iz,iside,eg)
+c     'v  ' (inflow, outer circle x < 0): uniform stream U = 1.
+c     'shl' (cylinder): zero traction here; the slip friction is added
+c     to the operator (navier_slip.f), not as a boundary value.
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      ux   = 1.0
+      uy   = 0.0
+      uz   = 0.0
+      temp = 0.0
+      trn  = 0.0
+      tr1  = 0.0
+      tr2  = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine useric(ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      ux   = 1.0
+      uy   = uparam(6)*exp(-((x-1.5)**2+y**2)/0.25)
+      uz   = 0.0
+      temp = 0.0
+      return
+      end
+c-----------------------------------------------------------------------
+      real function cyl_slip()
+c     slip length lambda = Kn*a (a = 0.5); 0: no slip; -1: shear free
+      include 'SIZE'
+      include 'TOTAL'
+      cyl_slip = 0.0
+      if (uparam(1).gt.0.0) cyl_slip =  0.5*uparam(1)
+      if (uparam(1).lt.0.0) cyl_slip = -1.0
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat
+      call nslip_init
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat2
+c     The cylinder faces are 'W  ' in cyl.re2: give them boundary ID 1
+c     and the BC that matches the slip length (before Nek builds the
+c     velocity masks).
+      include 'SIZE'
+      include 'TOTAL'
+      integer nw
+      real cyl_slip
+      call nslip_faces('W  ',1,cyl_slip(),nw)
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat3
+c     Robin coefficient of the slip friction on the wall nodes
+      include 'SIZE'
+      include 'TOTAL'
+      real cyl_slip
+      call nslip_coef(1,cyl_slip())
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userchk
+      include 'SIZE'
+      include 'TOTAL'
+      common /nslipw/ nslut(lx1*ly1*lz1*lelv),nslwm(lx1*ly1*lz1*lelv)
+      real nslut,nslwm
+      common /cylold/ vxo(lx1*ly1*lz1*lelv),vyo(lx1*ly1*lz1*lelv),timeo
+      real vxo,vyo,timeo
+      real x0(3)
+      save x0
+      data x0 /3*0.0/
+      integer bids(1),iobj(1)
+      save iobj
+      integer i,n,nprint
+      real cyl_slip,usmax,usmin,rmax,utmax,dumax,ustr,cd,cdp,cdv,cl
+
+      n = lx1*ly1*lz1*nelv
+      nprint = max(1,int(uparam(3)))
+
+      if (istep.eq.0) then
+         bids(1) = 1
+         call create_obj(iobj(1),bids,1)       ! the cylinder, for forces
+         call copy(vxo,vx,n)
+         call copy(vyo,vy,n)
+         timeo = time
+         if (nid.eq.0) then
+            open(unit=71,file='cyl_drag.dat')
+            write(71,'(a)') '# istep time Cd Cd_p Cd_v Cl us_max us_min'
+     $                    //' res_navier dudt_max'
+         endif
+         return
+      endif
+      if (mod(istep,nprint).ne.0 .and. lastep.eq.0) return
+
+c     forces on the cylinder: Cd = Fx/(0.5 rho U^2 D) = 2 Fx
+      call torque_calc(2.0,x0,.false.,.false.)
+      cd  = dragx (1)
+      cdp = dragpx(1)
+      cdv = dragvx(1)
+      cl  = dragy (1)
+
+c     wall diagnostics: residual of the Navier condition, slip velocity
+      call nslip_diag(1,cyl_slip(),utmax,rmax)
+      usmax = -1.0e30
+      usmin =  1.0e30
+      do i=1,n
+         if (nslwm(i).gt.0.5) then
+            ustr = nslut(i)                    ! oriented front -> rear
+            if (ym1(i,1,1,1).lt.0.0) ustr = -ustr
+            usmax = max(usmax,ustr)
+            usmin = min(usmin,ustr)
+         endif
+      enddo
+      usmax = glmax(usmax,1)
+      usmin = glmin(usmin,1)
+
+c     max |du/dt| since the previous diagnostic (steady-state monitor)
+      dumax = 0.0
+      do i=1,n
+         dumax = max(dumax,abs(vx(i,1,1,1)-vxo(i)),
+     $                     abs(vy(i,1,1,1)-vyo(i)))
+      enddo
+      dumax = glmax(dumax,1)/max(time-timeo,1.0e-12)
+      call copy(vxo,vx,n)
+      call copy(vyo,vy,n)
+      timeo = time
+
+      if (nid.eq.0) then
+         write(71,'(i9,1p9e16.8)') istep,time,cd,cdp,cdv,cl,
+     $        usmax,usmin,rmax,dumax
+         flush(71)
+         write(6,'(i9,1p5e14.6,a)') istep,time,cd,cl,rmax,dumax,
+     $        '  cylmon'
+      endif
+
+      if (uparam(2).gt.0.0 .and. time.gt.20.0 .and.
+     $    dumax.lt.uparam(2) .and. lastep.eq.0) then
+         if (nio.eq.0) write(6,*) 'cyl: steady state reached, stopping'
+         call outpost(vx,vy,vz,pr,t,'   ')
+         lastep = 1
+      endif
+      return
+      end
+c-----------------------------------------------------------------------
+      include 'navier_slip.f'

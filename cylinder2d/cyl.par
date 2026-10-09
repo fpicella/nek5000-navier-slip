@@ -1,0 +1,37 @@
+#
+# 2D flow past a circular cylinder (D = 1, U = 1) with a Navier slip wall.
+# Re = UD/nu is set by viscosity = -Re (Nek reads a negative value as 1/Re).
+# userParam01 = Kn = lambda/a, a = 0.5 (> 0 slip, 0 no slip, < 0 shear free)
+# userParam02 = stop when max|du/dt| < this value (0: run to endTime)
+# userParam03 = diagnostics interval (steps), see cyl.usr
+# userParam06 = initial blob that triggers shedding (e.g. 0.1 for Re > 47)
+#
+[GENERAL]
+stopAt = endTime
+endTime = 150.0
+dt = 5.0e-3
+timeStepper = bdf2
+extrapolation = OIFS
+targetCFL = 2.0
+variableDt = no
+writeControl = runTime
+writeInterval = 50.0
+dealiasing = yes
+userParam01 = 0.1
+userParam02 = 1.0e-6
+userParam03 = 200
+userParam06 = 0.0
+
+[PROBLEMTYPE]
+equation = incompNS
+stressFormulation = yes
+
+[PRESSURE]
+residualTol = 1.0e-8
+residualProj = yes
+
+[VELOCITY]
+residualTol = 1.0e-9
+residualProj = yes
+density = 1.0
+viscosity = -20.0

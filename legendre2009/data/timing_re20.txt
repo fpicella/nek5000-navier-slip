@@ -1,0 +1,27 @@
+c  rnd  steps  t_end  total s  ms/step    makf    hmhz    pres    axhm    usbc    uchk    vit    pit        Cd
+A  r1   34600  173.0    585.5   16.889   288.2    52.6    75.1    56.1    3.40    1.41   3.51   1.00   2.03141
+A  r2   34600  173.0    563.8   16.281   279.8    50.3    71.3    55.0    3.20    0.46   3.51   1.00   2.03141
+B  r1   34600  173.0    516.2   14.906   291.5    88.7    76.1    44.2    3.79    0.89   2.12   1.00   2.03139
+B  r2   34600  173.0    525.6   15.179   295.9    92.4    76.3    44.9    3.65    0.42   2.12   1.00   2.03139
+C  r1   34600  173.0    540.2   15.598   293.6   106.6    77.0    55.4    3.94    0.64   3.24   1.00   2.03022
+C  r2   34600  173.0    546.1   15.772   299.3   107.4    75.9    55.8    3.65    0.82   3.24   1.00   2.03022
+D  r1   34393  172.0    556.0   16.150   286.2   105.7    76.7    54.6    3.91   26.82   3.25   1.00   2.03022
+D  r2   34393  172.0    567.4   16.487   291.5   108.4    76.2    56.4    4.20   27.75   3.25   1.00   2.03022
+E  r3   34600  173.0    556.6   16.070   289.5   133.4    74.6    72.4    3.78    0.21   5.55   1.00   2.03127
+F  r3   34400  172.0    513.9   14.927   287.2    92.1    75.4    46.4    3.73    0.17   2.15   1.00   2.01968
+G  r3   29400  147.0    444.6   15.109   247.9    80.3    65.1    41.2    3.34    0.21   2.33   1.00   1.54468
+H  r3   27600  138.0    417.3   15.105   231.0    76.2    62.1    37.8    3.15    0.16   2.39   1.00   1.32857
+
+per call: axhm matvec [us], uchk per step [us]
+A  r1   axhm    120.3 us x  466178   uchk     40.8 us/step   no-slip, laplacian form (standard)
+A  r2   axhm    117.9 us x  466162   uchk     13.2 us/step   no-slip, laplacian form (standard)
+B  r1   axhm    209.0 us x  211693   uchk     25.7 us/step   no-slip, stress form
+B  r2   axhm    212.1 us x  211665   uchk     12.2 us/step   no-slip, stress form
+C  r1   axhm    221.2 us x  250329   uchk     18.5 us/step   Kn = 1e-3, stress form + Robin
+C  r2   axhm    223.0 us x  250329   uchk     23.7 us/step   Kn = 1e-3, stress form + Robin
+D  r1   axhm    218.9 us x  249254   uchk    779.7 us/step   Kn = 1e-3, diagnostics every step
+D  r2   axhm    226.1 us x  249254   uchk    806.7 us/step   Kn = 1e-3, diagnostics every step
+E  r3   axhm    219.1 us x  330265   uchk      6.1 us/step   Kn = 1e-4, stress form + Robin
+F  r3   axhm    219.5 us x  211621   uchk      5.0 us/step   Kn = 1e-2, stress form + Robin
+G  r3   axhm    221.1 us x  186183   uchk      7.3 us/step   Kn = 1, stress form + Robin
+H  r3   axhm    214.5 us x  176267   uchk      5.9 us/step   shear-free (shl, no Robin term)

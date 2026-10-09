@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: >-
+  If you use this code, please cite the article below (preferred citation)
+  and, if possible, this repository.
+title: "nek5000-navier-slip: an implicit Navier slip boundary condition on curved walls in Nek5000"
+type: software
+authors:
+  - family-names: Picella
+    given-names: Francesco
+    affiliation: "Institut Jean le Rond d'Alembert, Sorbonne Université, CNRS"
+license: BSD-3-Clause
+keywords:
+  - Nek5000
+  - spectral element method
+  - Navier slip
+  - partial slip
+  - superhydrophobic surfaces
+  - cylinder wake
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Picella
+      given-names: Francesco
+    - family-names: Robinet
+      given-names: Jean-Christophe
+    - family-names: Cherubini
+      given-names: Stefania
+  title: "Laminar–turbulent transition in channel flow with superhydrophobic surfaces modelled as a partial slip wall"
+  journal: "Journal of Fluid Mechanics"
+  volume: 881
+  start: 462
+  end: 497
+  year: 2019
+  doi: "10.1017/jfm.2019.740"

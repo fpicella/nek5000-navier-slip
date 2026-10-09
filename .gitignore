@@ -1,0 +1,15 @@
+# Nek5000 build and run products
+build*/
+obj/
+makefile
+nek5000
+*.f[0-9][0-9][0-9][0-9][0-9]
+*0.f*
+cyl.f
+verif.f
+SESSION.NAME
+logfile
+build.log
+run.log
+__pycache__/
+*.pyc
